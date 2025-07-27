@@ -1,0 +1,122 @@
+import pandas as pd
+
+# ask 1: Extract and Preview the Data
+    # Q1. The Superstore sales team has shared a new CSV file. Load the dataset and give a preview of the top 5 records to validate its structure.
+    # Load Superstore.csv into a DataFrame.
+    # Check number of rows and columns.
+    # Display column names and their data types.
+    
+df = pd.read_csv('Superstore.csv') # reading csv and loaded into dataframe
+print(df.head()) # Top 5 records
+print(len(df.columns)) # 21 columns
+print(df.dtypes) # Columname with their datatypes
+
+# Task 2: Clean Column Names and Normalize Dates
+    # Q2. Some columns have inconsistent names with spaces and slashes. Also, the dates are strings. Clean the column names and convert Order Date and Ship Date to datetime format so that you can later group data by month.
+    # Clean column headers using .str.replace().
+    # Convert Order_Date and Ship_Date to datetime64.
+    
+print(df.columns.to_list())
+df.rename(columns={
+    'Row ID':"Row_ID",
+    'Order ID':"Order_ID",
+    'Order Date':"Order_Date",
+    'Ship Date':"Ship_Date",
+    'Ship Mode':"Ship_Mode",
+    'Customer ID':"Customer_ID",
+    'Customer Name':"Customer_Name",
+    'Country/Region':"Country_and_Region",
+    'Postal Code':"Postal_Code",
+    'Product ID':"Product_ID",
+    'Sub-Category':"Sub_Category",
+    'Product Name':"Product_Name",
+},inplace=True)                    # ---> cleaned the column name
+print(df.columns.tolist())
+df['Order_Date']=df['Order_Date'].astype('datetime64[ns]')
+df['Ship_Date']=df['Ship_Date'].astype('datetime64[ns]')
+print(df.dtypes) # converted to datetime64[ns]
+
+# Task 3: Profitability by Region and Category
+#    Q3.The regional manager wants to know which region and category combinations are most profitable. Summarize total Sales, Profit, and average Discount grouped by Region and Category.
+#     Use groupby() + agg() to generate the report.
+#     Identify which Region+Category had highest profit.
+
+summary = df.groupby(['Region','Category']).agg(
+    Total_Sales = ('Sales','sum'),
+    Profit = ('Profit','sum'),
+    Discount = ('Discount','mean')
+)
+print(summary.sort_values(by='Profit',ascending=False)) # Region-Category - West-OfficeSupplies have maximum Profit
+
+# Task 4: Top 5 Most Profitable Products
+# Q4. The product team is planning to promote high-profit items. Identify the top 5 products that contributed the most to overall profit.
+#     Group by Product_Name, sum the profit, sort descending, and take top 5.
+
+Profitable_Product = df.groupby('Product_Name').agg(Profit = ('Profit','sum'))
+print(Profitable_Product.sort_values(by='Profit',ascending=False).head()) # Top 5 products contributing Profit
+
+# Task 5: Monthly Sales Trend
+# Q5. The leadership team wants to review monthly sales performance to understand seasonality. Prepare a month-wise sales trend report.
+#     Extract month from Order_Date
+#     Group by month and sum Sales
+
+df['Month'] = df['Order_Date'].dt.month # Extracting month from orderdate
+report = df.groupby('Month').agg(Sales_by_month=('Sales','sum'))
+print(report.sort_values(by='Month'))  # Sorts the total sales by month
+
+# Task 6: Cities with Highest Average Order Value
+# Q6. The business is interested in targeting high-value cities for marketing. Calculate the average order value (Sales ÷ Quantity) for each city and list the top 10.
+#     Create a new column Order_Value
+#     Group by City and calculate average order value
+#     Sort and get top 10
+
+
+df['Order_Value']=df['Sales']/df['Quantity']
+high_value_city = df.groupby('City').agg(Average = ('Order_Value','mean'))
+print(high_value_city.sort_values(by='Average',ascending=False).head(10)) # Top 10 values
+print(df['Order_Value'].head(5))
+
+# Task 7: Identify and Save Orders with Loss
+# Q7. Finance wants to analyze all loss-making orders. Filter all records where Profit < 0 and save it to a new file called loss_orders.csv.
+#     Use boolean filtering
+#     Export the filtered DataFrame to a CSV file without index
+
+loss_orders = df[df['Profit'] < 0]
+loss_orders.to_csv('loss_orders.csv',index=False)
+    
+
+# Task 8: Detect Null Values and Impute
+# Q8. Are there any missing values in the dataset? If yes, identify columns with nulls and fill missing Price values with 1.
+#     Use isnull().sum()
+#     Apply fillna() only on Price column
+
+df['Price']=df['Sales']/df['Quantity']
+df.to_csv('Price_Modified.csv')
+df1=pd.read_csv('Price_Modified.csv')
+print("Before fillna:")
+print(df1['Price'].isnull().sum())
+df1['Price']=df1['Price'].fillna(1)
+print("After fillna:")
+print(df1['Price'].isnull().sum())
+df1.to_csv('Removed_nullvalue_Price.csv')
+
+df.to_csv('After_Cleaning_Superstore.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
