@@ -103,3 +103,12 @@ spec_stats = df.groupby('Specialization').agg(
 )
 print(spec_stats)
 
+# 16. Summary table: Nulls, uniques, duplicate counts
+summary_table = pd.DataFrame({
+    'Column': df.columns,
+    'Nullcount': df.isnull().sum().values,
+    'Uniquecount': df.nunique().values,
+    'Duplicount': [df.duplicated(subset=col).sum() if df[col].duplicated().any() else 0 for col in df.columns]
+})
+print(summary_table)
+
