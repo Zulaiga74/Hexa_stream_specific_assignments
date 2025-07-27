@@ -1,0 +1,105 @@
+import pandas as pd
+
+df = pd.read_csv("final_college_student_placement_dataset.csv")
+print(len(df.columns))
+
+# 1. Categorize placed students into salary bands:
+    # Low: < 300,000
+    # Medium: 300,000 – 600,000
+    # High: > 600,000
+    
+def placed(salary):
+    if pd.isna(salary):
+        return "Unknown"
+    elif salary < 300000:
+        return "Low"
+    elif 300000<= salary < 600000:
+        return "Medium"
+    else:
+        return "High"
+    
+df['Salary'] = pd.to_numeric(df['Salary'], errors='coerce')
+df["Placed_Categorized_BySalary"] = df['Salary'].apply(placed)
+print(len(df.columns))
+print(df["Placed_Categorized_BySalary"].head(20))
+
+# 2. For each gender and specialization, calculate:
+    # Placement rate
+    # Average salary (only placed)
+    # Avg MBA score
+
+gender_specialization_status = df.groupby(['Gender','Specialization']).agg(
+    rate_placement = ('Placement',lambda x:(x == 'Yes').mean()),
+    avg_mba = ('MBA_Percentage','mean')
+)
+print(gender_specialization_status)
+
+# 3.Find how many students have missing values in any column.
+missing = df.isnull().any(axis=1)
+miss = missing.sum()
+print(miss)
+
+# 4. Display all rows where salary is missing.
+print(df[df['Salary'].isnull()])
+
+# 5. Filter only students with complete records (no missing values).
+complete_records = df.dropna()
+print(complete_records)
+
+# 6. Identify if there are any duplicate student entries
+duplicate = df.duplicated().any()
+print(duplicate)
+
+# 7. Drop the duplicate records and keep only the first occurrence.
+duplicated = df.drop_duplicates(keep='first')
+print(duplicated)
+
+# 8. Check for duplicates based only on student_id.
+duplicates = df['College_ID'].duplicated().any()
+print(duplicates)
+duplicate_sum = df['College_ID'].duplicated().sum()
+print(duplicate_sum)
+
+
+# 9.Find all unique specializations offered to students.
+unique_spec = df['Specialization'].unique()
+print(unique_spec)
+
+# 10. How many unique MBA scores are there?
+unique_mbascore = df['MBA_Percentage'].nunique()
+print(unique_mbascore)
+
+# 11. Count of unique combinations of gender, specialization, and status.
+unique_combo = df.groupby(['Gender','Specialization','Placement']).size()
+print(unique_combo)
+
+# 12. What is the average salary of all placed students?
+df['Salary'] = pd.to_numeric(df['Salary'],errors='coerce')
+print(df[df['Placement'] == 'Yes']['Salary'].mean())
+
+# 13. What is the maximum and minimum degree percentage in the dataset?
+print("SSC%-Max:",df['SSC_Percentage'].min())
+print("SSC%-Min:",df['SSC_Percentage'].max())
+print("HSC%-Max:",df['HSC_Percentage'].min())
+print("HSC%-Min:",df['HSC_Percentage'].max())
+print("MBA%-Max:",df['MBA_Percentage'].max())
+print("MBA%-Min:",df['MBA_Percentage'].min())
+
+# 14. Get total number of placed and unplaced students.
+placed_count = df['Placement'].value_counts()
+print(placed_count)
+
+# 15.For each specialization, calculate:
+    # Average SSC
+    # Average MBA
+    # Placement count
+    
+df['SSC_Percentage'] = pd.to_numeric(df['SSC_Percentage'], errors='coerce')
+df['MBA_Percentage'] = pd.to_numeric(df['MBA_Percentage'], errors='coerce')
+spec_stats = df.groupby('Specialization').agg(
+    avg_ssc =('SSC_Percentage','mean'),
+    avg_mba =('MBA_Percentage','mean'),
+    placement_cnt=('Placement',lambda x:(x=='Yes').sum())
+)
+print(spec_stats)
+
