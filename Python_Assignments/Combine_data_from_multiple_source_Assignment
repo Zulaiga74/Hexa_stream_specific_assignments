@@ -1,0 +1,86 @@
+import pandas as pd
+import sqlite3
+
+
+df_excel = pd.read_excel('sales_excel.xlsx')
+df_excel['Source']='Excel'
+df_json = pd.read_json('sales_json.json')
+df_json['Source']='JSON'
+df_csv = pd.read_csv('sales_csv.csv')
+df_csv['Source']='CSV'
+df_dict = pd.DataFrame({
+    "order_no": [501, 502],
+    "client": ["Ivy", "Jack"],
+    "product_name": ["Tablet", "Laptop"],
+    "qty_ordered": [2, 1],
+    "unit_cost": [650, 1250],
+    "date_of_order": pd.to_datetime(["2024-05-02", "2024-05-03"])
+})
+df_dict = df_dict.rename(columns={
+    'order_no':'OrderID',
+    'client':'Customer',
+    'product_name':'Product',
+    'qty_ordered':'Quantity',
+    'unit_cost':'UnitPrice',
+    'date_of_order':'OrderDate'
+})
+df_dict['Source']='Dictionary'
+conn=sqlite3.connect('sales_db.sqlite')
+df_sql = pd.read_sql_query('select*from Sales',conn)
+df_sql['Source']='SqlLite'
+
+print(f"Excel:{df_excel.shape[0]}")
+print(f"CSV:{df_csv.shape[0]}")
+print(f"JSON:{df_json.shape[0]}")
+print(f"SQLlite3:{df_sql.shape[0]}")
+print(f"Dictionary:{df_dict.shape[0]}")
+
+df_combined = pd.concat([df_excel,df_csv,df_json,df_sql,df_dict],ignore_index=True)
+df_combined['Total_Amount']=df_combined['Quantity']*df_combined['UnitPrice']
+total_amt = df_combined.groupby('Source')['Total_Amount'].sum()
+print(total_amt)
+df_combined['OrderDate']=df_combined['OrderDate'].astype('datetime64[ns]')
+df_combined['Month']=df_combined['OrderDate'].dt.month
+print(df_combined)
+
+# What is the total quantity sold for each product?
+total_qty = df_combined.groupby('Product')['Quantity'].sum()
+print(total_qty)
+
+# Which month had the highest total sales revenue?
+total_sales = df_combined.groupby('Month')['Total_Amount'].max()
+high_total_sales = total_sales.sort_values(ascending=False).head(1)
+print(high_total_sales)
+
+#  Who are the top 3 customers based on total purchase value?
+top3customer=df_combined.groupby('Customer')['Total_Amount'].max().sort_values(ascending=False).head(3)
+print(top3customer)
+
+# Which product generated the highest revenue and how many orders did it receive?
+high_product_revenue = df_combined.groupby('Product').agg(
+    Total_Quantity = ('Quantity','sum'),
+    Total_Revenue = ('Total_Amount','sum')
+)
+print(high_product_revenue.sort_values(by='Total_Revenue',ascending=False).head(1))
+
+#  What is the average order value (AOV) across all orders?
+average_order_value = df_combined['Total_Amount'].mean()
+print(average_order_value)
+
+# Identify the top 5 orders with the highest UnitPrice. Are these values realistic?
+unit_price = df_combined.groupby('Product')['UnitPrice'].max()
+top5_unit_price = unit_price.sort_values(ascending=False).head()
+print(top5_unit_price)
+
+# Detect outliers in pricing using standard deviation method. List them and suggest actions.
+outliers = df_combined[df_combined['UnitPrice']>df_combined['UnitPrice'].mean()+(2*df_combined['UnitPrice'].std())]
+print(outliers)
+
+# Exporting to csv file
+df_combined.to_csv('combine-data-assignment-2.csv')
+
+
+
+
+
+
